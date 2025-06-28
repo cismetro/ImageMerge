@@ -26,7 +26,7 @@
     <!-- Header -->
     <div class="bg-gradient-to-r from-teal-400 to-teal-500 text-white py-4">
         <div class="container mx-auto px-4">
-            <h1 class="text-xl font-semibold">Portal de FERRAMENTAS - Juntar Imagens</h1>
+            <h1 class="text-xl font-semibold">MERGE IMAGES</h1>
         </div>
     </div>
 
@@ -255,6 +255,7 @@
         // Register handler for bot response
         if (window.Poe) {
             window.Poe.registerHandler("image-merger", (result, context) => {
+                console.log("Handler chamado:", result);
                 const loadingSpinner = document.getElementById('loadingSpinner');
                 const resultImage = document.getElementById('resultImage');
                 const errorMessage = document.getElementById('errorMessage');
@@ -280,8 +281,26 @@
                         `;
                         resultImage.classList.remove('hidden');
                     } else {
-                        errorMessage.classList.remove('hidden');
-                        errorMessage.textContent = "Nenhuma imagem foi gerada. Resposta: " + response.content;
+                        // Mostrar a resposta do bot mesmo se não houver attachment
+                        resultImage.innerHTML = `
+                            <div class="text-left bg-gray-100 dark:bg-gray-700 p-4 rounded">
+                                <h4 class="font-bold mb-2">Resposta do Bot:</h4>
+                                <pre class="whitespace-pre-wrap text-sm">${response.content}</pre>
+                            </div>
+                        `;
+                        resultImage.classList.remove('hidden');
+                    }
+                } else if (result.status === "incomplete") {
+                    // Mostrar progresso durante streaming
+                    const response = result.responses[0];
+                    if (response && response.content) {
+                        resultImage.innerHTML = `
+                            <div class="text-left bg-gray-100 dark:bg-gray-700 p-4 rounded">
+                                <h4 class="font-bold mb-2">Processando...</h4>
+                                <pre class="whitespace-pre-wrap text-sm">${response.content}</pre>
+                            </div>
+                        `;
+                        resultImage.classList.remove('hidden');
                     }
                 }
             });
@@ -289,9 +308,13 @@
 
         async function processImages() {
             if (selectedFiles.length < 2) {
-                alert('Selecione pelo menos 2 imagens para juntar.');
+                showMessage('Selecione pelo menos 2 imagens para juntar.', 'error');
                 return;
             }
+
+            console.log('Iniciando processamento...');
+            console.log('Arquivos selecionados:', selectedFiles.length);
+            console.log('Window.Poe disponível:', !!window.Poe);
 
             resultSection.classList.remove('hidden');
             document.getElementById('loadingSpinner').classList.remove('hidden');
@@ -303,47 +326,52 @@
             const quality = document.getElementById('quality').value;
             const spacing = document.getElementById('spacing').value;
 
-            const prompt = `@Claude-Sonnet-4 Você precisa criar um script Python para juntar ${selectedFiles.length} imagens em uma única imagem.
+            // Prompt mais simples e direto para geração de imagem
+            const prompt = `@GPT-Image-1 Crie uma única imagem juntando ${selectedFiles.length} imagens enviadas. 
 
 Configurações:
-- Formato de saída: ${outputFormat.toUpperCase()}
-- Direção: ${direction}
-- Qualidade JPG: ${quality}%
-- Espaçamento: ${spacing}px
+- Direção: ${direction === 'horizontal' ? 'lado a lado horizontalmente' : direction === 'vertical' ? 'empilhadas verticalmente' : 'organizadas em grid'}
+- Espaçamento: ${spacing}px entre as imagens
+- Mantenha a qualidade original das imagens
 
-Instruções:
-1. Use Python com Pillow (PIL) para processar as imagens
-2. As imagens devem ser juntadas na direção "${direction}"
-3. Mantenha a proporção original das imagens
-4. Adicione espaçamento de ${spacing}px entre as imagens
-5. Salve no formato ${outputFormat.toUpperCase()}
-${outputFormat === 'jpg' ? `6. Use qualidade ${quality} para JPG` : ''}
-
-Forneça APENAS o código Python completo e funcional para fazer isso. O código deve:
-- Aceitar uma lista de caminhos de arquivos de imagem
-- Juntar as imagens conforme especificado
-- Salvar o resultado em um arquivo
-- Retornar o caminho do arquivo gerado
-
-Não inclua explicações, apenas o código.`;
+Junte as imagens de acordo com essas especificações.`;
 
             try {
-                if (window.Poe) {
-                    await window.Poe.sendUserMessage(prompt, {
-                        handler: "image-merger",
-                        stream: false,
-                        openChat: false,
-                        attachments: selectedFiles
-                    });
-                } else {
-                    document.getElementById('loadingSpinner').classList.add('hidden');
-                    document.getElementById('errorMessage').classList.remove('hidden');
-                    document.getElementById('errorMessage').textContent = "Poe API não disponível. Execute em um ambiente Poe Canvas.";
+                if (!window.Poe) {
+                    throw new Error("API Poe não disponível");
                 }
+
+                console.log('Enviando mensagem para:', '@GPT-Image-1');
+                console.log('Prompt:', prompt);
+                console.log('Attachments:', selectedFiles);
+
+                const result = await window.Poe.sendUserMessage(prompt, {
+                    handler: "image-merger",
+                    stream: true,
+                    openChat: false,
+                    attachments: selectedFiles
+                });
+
+                console.log('Mensagem enviada com sucesso:', result);
+
             } catch (error) {
+                console.error('Erro ao processar:', error);
                 document.getElementById('loadingSpinner').classList.add('hidden');
                 document.getElementById('errorMessage').classList.remove('hidden');
-                document.getElementById('errorMessage').textContent = "Erro ao enviar imagens: " + error.message;
+                document.getElementById('errorMessage').textContent = "Erro ao processar imagens: " + error.message;
+            }
+        }
+
+        function showMessage(message, type = 'info') {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.className = type === 'error' ? 'text-red-500' : 'text-blue-500';
+            errorDiv.classList.remove('hidden');
+            
+            if (type !== 'error') {
+                setTimeout(() => {
+                    errorDiv.classList.add('hidden');
+                }, 3000);
             }
         }
     </script>
