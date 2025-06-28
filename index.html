@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Ferramentas - Juntar Imagens</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .drag-over {
+            border-color: #5D5CDE !important;
+            background-color: rgba(93, 92, 222, 0.1) !important;
+        }
+        
+        .dark {
+            background-color: #181818;
+        }
+        
+        .image-preview {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 min-h-screen">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-teal-400 to-teal-500 text-white py-4">
+        <div class="container mx-auto px-4">
+            <h1 class="text-xl font-semibold">Portal de FERRAMENTAS - Juntar Imagens</h1>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Welcome Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Bem-vindo ao Juntador de Imagens</h2>
+            <p class="text-gray-600 dark:text-gray-300">Faça upload de múltiplas imagens e junte-as em um único arquivo.</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <h3 class="text-lg font-semibold text-teal-500 mb-4">Upload de Imagens</h3>
+            
+            <div id="dropZone" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-teal-400 transition-colors cursor-pointer">
+                <div class="text-gray-500 dark:text-gray-400">
+                    <svg class="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-lg mb-2">Arraste e solte suas imagens aqui</p>
+                    <p class="text-sm">ou clique para selecionar arquivos</p>
+                    <p class="text-xs mt-2 text-gray-400">Aceita: JPG, PNG, GIF, BMP, TIFF, WEBP e outros formatos</p>
+                </div>
+            </div>
+            
+            <input type="file" id="fileInput" multiple accept="image/*" class="hidden">
+        </div>
+
+        <!-- Preview Section -->
+        <div id="previewSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6 hidden">
+            <h3 class="text-lg font-semibold text-teal-500 mb-4">Imagens Selecionadas</h3>
+            <div id="imagePreview" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+            <button id="clearImages" class="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
+                Limpar Imagens
+            </button>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settingsSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6 hidden">
+            <h3 class="text-lg font-semibold text-teal-500 mb-4">Configurações de Saída</h3>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Formato de Saída</label>
+                    <select id="outputFormat" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base">
+                        <option value="png">PNG (Recomendado)</option>
+                        <option value="jpg">JPG</option>
+                        <option value="gif">GIF</option>
+                        <option value="bmp">BMP</option>
+                        <option value="tiff">TIFF</option>
+                        <option value="webp">WEBP</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Direção</label>
+                    <select id="direction" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base">
+                        <option value="horizontal">Horizontal (lado a lado)</option>
+                        <option value="vertical">Vertical (empilhadas)</option>
+                        <option value="grid">Grid automático</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Qualidade JPG (se aplicável)</label>
+                    <input type="range" id="quality" min="10" max="100" value="90" class="w-full">
+                    <span id="qualityValue" class="text-sm text-gray-600 dark:text-gray-400">90%</span>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Espaçamento (px)</label>
+                    <input type="number" id="spacing" min="0" max="50" value="5" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base">
+                </div>
+            </div>
+        </div>
+
+        <!-- Process Section -->
+        <div id="processSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6 hidden">
+            <div class="text-center">
+                <button id="processBtn" class="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors">
+                    Juntar Imagens
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div id="resultSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hidden">
+            <h3 class="text-lg font-semibold text-teal-500 mb-4">Resultado</h3>
+            <div id="resultContent" class="text-center">
+                <div id="loadingSpinner" class="hidden">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                    <p class="mt-2 text-gray-600 dark:text-gray-400">Processando imagens...</p>
+                </div>
+                <div id="resultImage" class="hidden">
+                    <!-- Resultado será exibido aqui -->
+                </div>
+                <div id="errorMessage" class="hidden text-red-500">
+                    <!-- Mensagens de erro serão exibidas aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dark mode support
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        let selectedFiles = [];
+
+        // Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const imagePreview = document.getElementById('imagePreview');
+        const settingsSection = document.getElementById('settingsSection');
+        const processSection = document.getElementById('processSection');
+        const resultSection = document.getElementById('resultSection');
+        const clearImages = document.getElementById('clearImages');
+        const processBtn = document.getElementById('processBtn');
+        const qualityRange = document.getElementById('quality');
+        const qualityValue = document.getElementById('qualityValue');
+
+        // Event listeners
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        clearImages.addEventListener('click', clearAllImages);
+        processBtn.addEventListener('click', processImages);
+        qualityRange.addEventListener('input', (e) => {
+            qualityValue.textContent = e.target.value + '%';
+        });
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+            addFiles(files);
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            addFiles(files);
+        }
+
+        function addFiles(files) {
+            selectedFiles = [...selectedFiles, ...files];
+            updatePreview();
+            showSections();
+        }
+
+        function updatePreview() {
+            imagePreview.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const div = document.createElement('div');
+                div.className = 'relative group';
+                
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.className = 'image-preview rounded border';
+                img.alt = file.name;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.innerHTML = '×';
+                removeBtn.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 text-sm hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity';
+                removeBtn.onclick = () => removeImage(index);
+                
+                const fileName = document.createElement('p');
+                fileName.textContent = file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name;
+                fileName.className = 'text-xs text-gray-600 dark:text-gray-400 mt-1 text-center';
+                
+                div.appendChild(img);
+                div.appendChild(removeBtn);
+                div.appendChild(fileName);
+                imagePreview.appendChild(div);
+            });
+        }
+
+        function removeImage(index) {
+            selectedFiles.splice(index, 1);
+            updatePreview();
+            if (selectedFiles.length === 0) {
+                hideSections();
+            }
+        }
+
+        function clearAllImages() {
+            selectedFiles = [];
+            imagePreview.innerHTML = '';
+            hideSections();
+        }
+
+        function showSections() {
+            previewSection.classList.remove('hidden');
+            settingsSection.classList.remove('hidden');
+            processSection.classList.remove('hidden');
+        }
+
+        function hideSections() {
+            previewSection.classList.add('hidden');
+            settingsSection.classList.add('hidden');
+            processSection.classList.add('hidden');
+            resultSection.classList.add('hidden');
+        }
+
+        // Register handler for bot response
+        if (window.Poe) {
+            window.Poe.registerHandler("image-merger", (result, context) => {
+                const loadingSpinner = document.getElementById('loadingSpinner');
+                const resultImage = document.getElementById('resultImage');
+                const errorMessage = document.getElementById('errorMessage');
+                
+                if (result.status === "error") {
+                    loadingSpinner.classList.add('hidden');
+                    errorMessage.classList.remove('hidden');
+                    errorMessage.textContent = "Erro ao processar imagens: " + (result.responses[0]?.statusText || "Erro desconhecido");
+                } else if (result.status === "complete") {
+                    loadingSpinner.classList.add('hidden');
+                    
+                    const response = result.responses[0];
+                    if (response.attachments && response.attachments.length > 0) {
+                        const attachment = response.attachments[0];
+                        resultImage.innerHTML = `
+                            <img src="${attachment.url}" alt="Imagem Juntada" class="max-w-full h-auto rounded border">
+                            <div class="mt-4">
+                                <a href="${attachment.url}" download="${attachment.name}" 
+                                   class="bg-teal-500 hover:bg-teal-600 text-white px-6 py-2 rounded-lg inline-block transition-colors">
+                                    Baixar Imagem
+                                </a>
+                            </div>
+                        `;
+                        resultImage.classList.remove('hidden');
+                    } else {
+                        errorMessage.classList.remove('hidden');
+                        errorMessage.textContent = "Nenhuma imagem foi gerada. Resposta: " + response.content;
+                    }
+                }
+            });
+        }
+
+        async function processImages() {
+            if (selectedFiles.length < 2) {
+                alert('Selecione pelo menos 2 imagens para juntar.');
+                return;
+            }
+
+            resultSection.classList.remove('hidden');
+            document.getElementById('loadingSpinner').classList.remove('hidden');
+            document.getElementById('resultImage').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+
+            const outputFormat = document.getElementById('outputFormat').value;
+            const direction = document.getElementById('direction').value;
+            const quality = document.getElementById('quality').value;
+            const spacing = document.getElementById('spacing').value;
+
+            const prompt = `@Claude-Sonnet-4 Você precisa criar um script Python para juntar ${selectedFiles.length} imagens em uma única imagem.
+
+Configurações:
+- Formato de saída: ${outputFormat.toUpperCase()}
+- Direção: ${direction}
+- Qualidade JPG: ${quality}%
+- Espaçamento: ${spacing}px
+
+Instruções:
+1. Use Python com Pillow (PIL) para processar as imagens
+2. As imagens devem ser juntadas na direção "${direction}"
+3. Mantenha a proporção original das imagens
+4. Adicione espaçamento de ${spacing}px entre as imagens
+5. Salve no formato ${outputFormat.toUpperCase()}
+${outputFormat === 'jpg' ? `6. Use qualidade ${quality} para JPG` : ''}
+
+Forneça APENAS o código Python completo e funcional para fazer isso. O código deve:
+- Aceitar uma lista de caminhos de arquivos de imagem
+- Juntar as imagens conforme especificado
+- Salvar o resultado em um arquivo
+- Retornar o caminho do arquivo gerado
+
+Não inclua explicações, apenas o código.`;
+
+            try {
+                if (window.Poe) {
+                    await window.Poe.sendUserMessage(prompt, {
+                        handler: "image-merger",
+                        stream: false,
+                        openChat: false,
+                        attachments: selectedFiles
+                    });
+                } else {
+                    document.getElementById('loadingSpinner').classList.add('hidden');
+                    document.getElementById('errorMessage').classList.remove('hidden');
+                    document.getElementById('errorMessage').textContent = "Poe API não disponível. Execute em um ambiente Poe Canvas.";
+                }
+            } catch (error) {
+                document.getElementById('loadingSpinner').classList.add('hidden');
+                document.getElementById('errorMessage').classList.remove('hidden');
+                document.getElementById('errorMessage').textContent = "Erro ao enviar imagens: " + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
